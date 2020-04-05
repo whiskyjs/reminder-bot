@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="ReminderBot\Timer.fs" />
+        <Compile Include="ReminderBot.Helpers\Url.fs" />
+        <Compile Include="ReminderBot.Helpers\Path.fs" />
+        <Compile Include="ReminderBot.Helpers\Globals.fs" />
+        <Compile Include="ReminderBot.Helpers\Date.fs" />
+        <Compile Include="ReminderBot.Helpers\Config.fs" />
+        <Compile Include="ReminderBot\Errors.fs" />
+        <Compile Include="ReminderBot.Model\Services\Redmine.fs" />
+        <Compile Include="ReminderBot.Model\Storage.fs" />
+        <Compile Include="ReminderBot.Model\User.fs" />
+        <Compile Include="ReminderBot.Model\Bot\Telegram\Notification.fs" />
+        <Compile Include="ReminderBot.Model\Logic.fs" />
+        <Compile Include="ReminderBot.Model\Json.fs" />
+        <Compile Include="ReminderBot.Client\Service\Redmine.fs" />
+        <Compile Include="ReminderBot.Client\Bot\Telegram.fs" />
+        <Compile Include="ReminderBot.Model\Notifications.fs" />
+        <Compile Include="ReminderBot.Logic\Resolver.fs" />
+        <Compile Include="ReminderBot.Logic\Executor.fs" />
+        <Compile Include="ReminderBot.Logic\Notifier.fs" />
+        <Compile Include="ReminderBot.Controller\API\V1\Telegram.fs" />
+        <Compile Include="ReminderBot\Startup.fs" />
+        <Compile Include="ReminderBot\Program.fs" />
+        <Content Include="LICENSE.txt" />
+        <Content Include="README.md" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="FSharp.Data" Version="3.3.3" />
+      <PackageReference Include="FSharp.SystemTextJson" Version="0.10.25" />
+      <PackageReference Include="LiteDB" Version="4.1.4" />
+      <PackageReference Include="LiteDB.FSharp" Version="2.15.0" />
+    </ItemGroup>
+
+</Project>

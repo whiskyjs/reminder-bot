@@ -1,0 +1,14 @@
+﻿{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "ReminderBot": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "launchUrl": "api/telegram/update/",
+      "applicationUrl": "http://localhost:34568",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+.idea
+.vscode
+
+*.log
+
+bin/
+obj/
+/packages/
+ReminderBot.sln.DotSettings.user
+
+appsettings.json
+appsettings.Development.json
+storage.db
