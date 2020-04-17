@@ -6,9 +6,9 @@ module Timer =
 
     let AwaitTaskVoid : (Task -> Async<unit>) = Async.AwaitIAsyncResult >> Async.Ignore
 
-    let DoPeriodicWork (f: unit -> Async<unit>) (interval: int) (token: CancellationToken) =
+    let DoPeriodicWork (f: unit -> Async<unit>) (milliseconds: int) (token: CancellationToken) =
         async {
             while not token.IsCancellationRequested do
                 do! f()
-                do! Task.Delay(interval, token) |> AwaitTaskVoid
+                do! Task.Delay(milliseconds, token) |> AwaitTaskVoid
         }

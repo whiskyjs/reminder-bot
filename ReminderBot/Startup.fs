@@ -39,7 +39,7 @@ type Startup private () =
     member this.StartNotifier cfg =
         let token = CancellationToken()
         
-        Timer.DoPeriodicWork (Notifier.Notify cfg) (10000) token
+        Timer.DoPeriodicWork (Notifier.Notify cfg) (1000 * 60 * 2) token
         |> Async.Start
         
         token
