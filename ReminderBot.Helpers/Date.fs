@@ -3,10 +3,11 @@ namespace ReminderBot.Helpers
 open System
 
 module Date =
-    let CurrentDateStr () = DateTime.Now.ToString("yyyy-MM-dd")
+    let CurrentDateStr () =
+        DateTime.Now.ToString("yyyy-MM-dd")
     
     let IsToday str =
-        let now = DateTime.Now
+        let now = CurrentDateStr () |> DateTime.Parse
         let date = str |> DateTime.Parse
         
         date.Year = now.Year && date.Month = now.Month && date.Day = now.Day
@@ -21,4 +22,4 @@ module Date =
         date.DayOfWeek = DayOfWeek.Saturday || date.DayOfWeek = DayOfWeek.Sunday 
         
     let IsHolidayToday =
-        IsHoliday DateTime.Now
+        IsHoliday (CurrentDateStr () |> DateTime.Parse)

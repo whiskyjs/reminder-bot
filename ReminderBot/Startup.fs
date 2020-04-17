@@ -12,6 +12,8 @@ open Microsoft.Extensions.Hosting
 open ReminderBot.Logic
 
 type Startup private () =
+    let notifierInterval = 1000 * 60 * 2
+    
     new(configuration: IConfiguration) as this =
         Startup()
         then
@@ -39,7 +41,7 @@ type Startup private () =
     member this.StartNotifier cfg =
         let token = CancellationToken()
         
-        Timer.DoPeriodicWork (Notifier.Notify cfg) (1000 * 60 * 2) token
+        Timer.DoPeriodicWork (Notifier.Notify cfg) notifierInterval token
         |> Async.Start
         
         token

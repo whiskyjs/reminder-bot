@@ -51,7 +51,7 @@ module Resolver =
     let GetIssueUrl baseUrl issueId commentIndex =
         Url(baseUrl)
             .Path(sprintf "/issues/%d/" issueId)
-            .Fragment(sprintf "note-%d" commentIndex)
+            .Fragment(if commentIndex > 0 then sprintf "note-%d" commentIndex else "")
             .ToString()
 
     let Resolve (cfg: IConfiguration) (connector: User.Telegram) (message: string): Resolution =
@@ -154,34 +154,71 @@ module Resolver =
             async {
                 let user = FetchUser connector.Id
                 
-                let! timeEntriesToday = Config.GetRedmineAuth cfg ||> Redmine.TimeEntries.getList ([
+                // Запрашиваем трудозатраты за сегодня
+                let! entries = Config.GetRedmineAuth cfg ||> Redmine.TimeEntries.getList ([
                     "from", Date.CurrentDateStr ();
                     "to", Date.CurrentDateStr ()
                     "user_id", user.Id |> string
                     ] |> Map.ofList)
                 
-                let hoursToday =
-                    timeEntriesToday
-                    |> Array.fold (fun acc entry -> acc + entry.hours) 0.0
+                // Делим на 2 части - привязанные к задачам и нет
+                let issueEntries, issuelessEntries =
+                    entries
+                    |> Array.partition(fun entry -> entry.issue.IsSome)
                     
-                let! activeIssues = Config.GetRedmineAuth cfg ||> Redmine.Issues.getList ([
-                    "assigned_to_id", user.Id |> string;
+                // Собираем ID связанных с трудозатратами задач
+                let entryIssueIds =
+                    issueEntries |> Array.fold (fun acc entry ->
+                        match entry.issue with
+                        | Some issue -> (acc, [|issue.id|]) ||> Array.append
+                        | _ -> acc
+                        ) [||]
+                
+                // Запрашиваем задачи, обновленные сегодня 
+                let! updatedIssues = Config.GetRedmineAuth cfg ||> Redmine.Issues.getList ([
                     "updated_on", Date.CurrentDateStr ()
                     ] |> Map.ofList)
                 
-                let! detailedIssues =
-                    activeIssues
-                    |> Array.map(fun issue -> async {
-                        return! Config.GetRedmineAuth cfg ||> Redmine.Issues.getDetail ([
-                            "include", "journals"
-                        ] |> Map.ofList) issue.id
-                    })
-                    |> Async.Parallel
+                // Собираем их ID
+                let updatedIssueIds =
+                    updatedIssues
+                    |> Array.map(fun issue -> issue.id)
                     
-                let commentedIssues =
+                // Общий массив issue ID, по которым нужно вытащить все данные
+                let totalIssueIds =
+                    (entryIssueIds, updatedIssueIds)
+                    ||> Array.append
+                    |> Array.distinct
+                    
+                // Запрашиваем детальные данные пачками по 5 штук и добавляем задержку, чтобы Redmine не утонул
+                let detailedIssues =
+                    totalIssueIds
+                    |> Array.chunk 5
+                    |> Array.map(fun ids ->
+                            ids
+                            |> Array.map(fun id ->
+                                Config.GetRedmineAuth cfg ||> Redmine.Issues.getDetail ([
+                                        "include", "journals"
+                                    ] |> Map.ofList) id
+                                )
+                            |> Async.Parallel
+                            )
+                    |> Array.fold (fun (acc: Redmine.Issue[]) chunk ->
+                        async {
+                            let! chunkIssues = chunk
+                            
+                            do! Async.Sleep(200)
+                            
+                            return (acc, chunkIssues) ||> Array.append
+                        } |> Async.RunSynchronously) [||]
+                    
+                // Фильтруем полученный список и подготавливаем данные для отправки.
+                // Issue должна содержать либо комментарий пользователя за сегодня, либо быть привязана
+                // к трудозатратам за сегодня
+                let preparedIssues =
                     detailedIssues
-                    |> Array.map(fun issue ->
-                        let lastCommentIndex =
+                    |> Array.fold(fun acc issue ->
+                        let lastCommentIndexToday =
                             try
                                 issue.journals
                                 |> function
@@ -194,24 +231,55 @@ module Resolver =
                             with 
                             | :? System.Collections.Generic.KeyNotFoundException ->
                                 0
-                                    
-                        issue.id, issue.subject, lastCommentIndex
-                        )
-                    |> Array.filter(fun (_, _, index) -> index > 0)
+                                
+                        let issueEntries =
+                            issueEntries |> Array.filter(fun entry ->
+                                match entry.issue with
+                                | Some associatedIssue -> associatedIssue.id = issue.id
+                                | _ -> false
+                                )
+                            
+                        if issueEntries.Length > 0 || lastCommentIndexToday > 0 then
+                            let issueHours = issueEntries |> Array.fold (fun acc entry -> acc + entry.hours) 0.0
+                            
+                            let issueUrl = GetIssueUrl (Config.GetRedmineUrl cfg) issue.id lastCommentIndexToday
+                                
+                            let issueLink = sprintf "[%s](%s)" issue.subject issueUrl
+                            
+                            [|(issueLink, issueHours)|] |> Array.append acc
+                        else
+                            acc
+                        ) [||]
+                    
+                let hours =
+                    entries
+                    |> Array.fold (fun acc entry -> acc + entry.hours) 0.0
+                    
+                let issuelessHours =
+                    issuelessEntries
+                    |> Array.fold (fun acc entry -> acc + entry.hours) 0.0 
                     
                 let message =
-                    [| sprintf "Трудозатраты за сегодня: %.2f ч." hoursToday
-                       "Пожалуйста, проверьте, по всем ли задачам выставлены часы."
-                       match commentedIssues with
+                    [| sprintf "*Всего часов за сегодня: %.2f ч.*" hours
+                       "Проверьте, по всем ли задачам выставлены часы."
+                       match detailedIssues with
                        | [||] ->
                            "Вы сегодня не отметились ни в одной задаче."
                        | _ ->
-                            commentedIssues
-                            |> Array.map (fun (id, subject, index) ->
-                                (sprintf "%s (%s)" subject (GetIssueUrl (Config.GetRedmineUrl cfg) id index))
+                            preparedIssues
+                            |> Array.fold (fun acc (link, hours) ->
+                                [| match hours with
+                                   | 0.0 -> link
+                                   | _ -> sprintf "%s - %.2f ч." link hours |]
+                                |> Array.append acc                                
+                                ) [|"*Активность за сегодня:*"|]
+                            |> (fun lines ->
+                                match issuelessEntries with
+                                | [||] -> lines
+                                | _ ->
+                                    [| sprintf "*Также:* %.2f ч., не привязанных к задачам." issuelessHours |]
+                                    |> Array.append lines
                                 )
-                            |> Array.toList
-                            |> (@) ["Сегодня вы оставляли комментарии в задачах:"]
                             |> String.concat "\n"
                         |]
                     

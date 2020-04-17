@@ -13,7 +13,7 @@ module Telegram =
         Url
             .Build(Defaults.baseUrl)
             .Path(sprintf "bot%s/%s" token method)
-            .Query(["chat_id", chatId; "text", text] |> Map.ofList)
+            .Query(["chat_id", chatId; "text", text; "parse_mode", "Markdown"] |> Map.ofList)
             .Uri()
             .ToString()
 
