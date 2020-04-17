@@ -15,6 +15,12 @@ open ReminderBot.Helpers
 open ReminderBot.Model.User
 
 module Resolver =
+    [<Literal>]
+    let DetailIssueChunkSize = 5
+    
+    [<Literal>]
+    let DetailIssueChunkDelay = 500;
+    
     module Command =
         [<Literal>]
         let Start = "/start"
@@ -183,35 +189,36 @@ module Resolver =
                 let updatedIssueIds =
                     updatedIssues
                     |> Array.map(fun issue -> issue.id)
-                    
+                
                 // Общий массив issue ID, по которым нужно вытащить все данные
                 let totalIssueIds =
                     (entryIssueIds, updatedIssueIds)
                     ||> Array.append
                     |> Array.distinct
-                    
+                
                 // Запрашиваем детальные данные пачками по 5 штук и добавляем задержку, чтобы Redmine не утонул
-                let detailedIssues =
+                let chunkedIssues =
                     totalIssueIds
-                    |> Array.chunk 5
+                    |> Array.chunk DetailIssueChunkSize
                     |> Array.map(fun ids ->
                             ids
-                            |> Array.map(fun id ->
-                                Config.GetRedmineAuth cfg ||> Redmine.Issues.getDetail ([
-                                        "include", "journals"
-                                    ] |> Map.ofList) id
-                                )
-                            |> Async.Parallel
-                            )
-                    |> Array.fold (fun (acc: Redmine.Issue[]) chunk ->
-                        async {
-                            let! chunkIssues = chunk
-                            
-                            do! Async.Sleep(200)
-                            
-                            return (acc, chunkIssues) ||> Array.append
-                        } |> Async.RunSynchronously) [||]
+                            |> Array.map(fun id -> Config.GetRedmineAuth cfg ||> Redmine.Issues.getDetail ([
+                                    "include", "journals"
+                                    ] |> Map.ofList) id)
+                            |> Async.Parallel)
+                
+                // TODO: https://github.com/fsharp/fslang-suggestions/issues/706
+                let! detailedIssues = async {
+                    let mutable issues: Redmine.Issue[] = [||]
                     
+                    for chunk in chunkedIssues do
+                        let! chunkIssues = chunk
+                        do! Async.Sleep DetailIssueChunkDelay
+                        issues <- (chunkIssues |> Array.append issues)
+                        
+                    return issues
+                }
+                
                 // Фильтруем полученный список и подготавливаем данные для отправки.
                 // Issue должна содержать либо комментарий пользователя за сегодня, либо быть привязана
                 // к трудозатратам за сегодня
