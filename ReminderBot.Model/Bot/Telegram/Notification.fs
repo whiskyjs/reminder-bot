@@ -8,22 +8,19 @@ open ReminderBot.Model
 open ReminderBot.Model.User
 
 module Notification =
-    [<JsonFSharpConverter>]
     type From =
         { id: int
           is_bot: bool
           first_name: string
-          username: string option Skippable
+          username: string option
           language_code: string }
 
-    [<JsonFSharpConverter>]
     type Chat =
         { id: int
           first_name: string
-          username: string option Skippable
+          username: string option
           ``type``: string }
 
-    [<JsonFSharpConverter>]
     type Message =
         { message_id: int
           from: From
@@ -31,7 +28,6 @@ module Notification =
           date: int
           text: string }
 
-    [<JsonFSharpConverter>]
     type This =
         { update_id: int
           message: Message }
@@ -43,10 +39,7 @@ module Notification =
           Name = message.from.first_name
           Username =
               match message.from.username with
-              | Include option ->
-                  match option with
-                  | Some string -> string
-                  | _ -> "Логин отсутствует"
+              | Some string -> string
               | _ -> "Логин отсутствует"
           Language = message.from.language_code }
         

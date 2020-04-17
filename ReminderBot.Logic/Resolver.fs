@@ -184,6 +184,9 @@ module Resolver =
                         let lastCommentIndex =
                             try
                                 issue.journals
+                                |> function
+                                    | Some comments -> comments
+                                    | _ -> [||]
                                 |> Array.findIndexBack (fun comment ->
                                     comment.user.id = user.Id && (Date.IsToday (comment.created_on))     
                                     )

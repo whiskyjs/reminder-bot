@@ -3,6 +3,7 @@ namespace ReminderBot.Client.Service
 open FSharp.Data
 
 open System.Text.Json
+open System.Text.Json.Serialization
 
 open ReminderBot.Helpers
 open ReminderBot.Model.Redmine
@@ -21,7 +22,10 @@ module Redmine =
             let! response =
                 Http.AsyncRequestString(serviceUrl.ToString(), [], [("X-Redmine-API-Key", token)])
                 
-            return response |> JsonSerializer.Deserialize<'T>
+            let options = JsonSerializerOptions()
+            options.Converters.Add(JsonFSharpConverter())
+                
+            return JsonSerializer.Deserialize<'T>(response, options)
         }
 
     module Users =
