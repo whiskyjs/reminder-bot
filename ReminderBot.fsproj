@@ -17,7 +17,6 @@
         <Compile Include="ReminderBot.Model\User.fs" />
         <Compile Include="ReminderBot.Model\Bot\Telegram\Notification.fs" />
         <Compile Include="ReminderBot.Model\Logic.fs" />
-        <Compile Include="ReminderBot.Model\Json.fs" />
         <Compile Include="ReminderBot.Client\Service\Redmine.fs" />
         <Compile Include="ReminderBot.Client\Bot\Telegram.fs" />
         <Compile Include="ReminderBot.Model\Notifications.fs" />
@@ -33,7 +32,7 @@
 
     <ItemGroup>
       <PackageReference Include="FSharp.Data" Version="3.3.3" />
-      <PackageReference Include="FSharp.SystemTextJson" Version="0.10.25" />
+      <PackageReference Include="FSharp.SystemTextJson" Version="0.11.13" />
       <PackageReference Include="LiteDB" Version="4.1.4" />
       <PackageReference Include="LiteDB.FSharp" Version="2.15.0" />
     </ItemGroup>
