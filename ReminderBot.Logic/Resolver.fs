@@ -264,12 +264,12 @@ module Resolver =
                     
                 let issuelessHours =
                     issuelessEntries
-                    |> Array.fold (fun acc entry -> acc + entry.hours) 0.0 
+                    |> Array.fold (fun acc entry -> acc + entry.hours) 0.0
                     
                 let message =
                     [| sprintf "*Всего часов за сегодня: %.2f ч.*" hours
                        "Проверьте, по всем ли задачам выставлены часы."
-                       match detailedIssues with
+                       match preparedIssues with
                        | [||] ->
                            "Вы сегодня не отметились ни в одной задаче."
                        | _ ->
