@@ -78,7 +78,7 @@ module Resolver =
                         remoteUsers |> Array.find (fun user -> user.login = login)
                     with
                         | :? System.Collections.Generic.KeyNotFoundException ->
-                            LogicError"Пользователь с указанным логином не найден в базе."  |> raise                    
+                            LogicError "Пользователь с указанным логином не найден в базе."  |> raise                    
                 
                 // Если Telegram-аккаунт привязан к неким другим Redmine-пользователям - отвязываем и сообщаем
                 // кто именно инициировал отвязку

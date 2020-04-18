@@ -29,7 +29,7 @@ module Notifier =
                             |> List.find(fun this -> this.UserId = user.Id)
                             |> ignore
                             
-                            async { ()  }
+                            async { () }
                         with
                             | :? System.Collections.Generic.KeyNotFoundException ->
                                 // Сохраняем запись о том, что отправка уже была
@@ -48,7 +48,7 @@ module Notifier =
                                 |> Executor.Send cfg user.Connectors.Telegram.Id
                                 |> Async.Ignore
                                 
-                            | _ -> async { ()  }
+                            | _ -> async { () }
                         )
                 
                 // TODO: https://github.com/fsharp/fslang-suggestions/issues/706
