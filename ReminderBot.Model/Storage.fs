@@ -9,7 +9,7 @@ module Storage =
     module Defaults =
         [<Literal>]
         let DatabaseName =
-            "storage.db"            
+            "Database/Common.LiteDB.db"            
         
         let DatabasePath =
             Path.GetRoot + DatabaseName

@@ -18,5 +18,7 @@ module Telegram =
             .ToString()
 
     let sendMessage token chatId text =
-         Http.AsyncRequestString(buildUrl token "sendMessage" chatId text)
+         async {
+            do! Http.AsyncRequestString(buildUrl token "sendMessage" chatId text) |> Async.Ignore
+         }
          

@@ -21,5 +21,5 @@ module Date =
             
         date.DayOfWeek = DayOfWeek.Saturday || date.DayOfWeek = DayOfWeek.Sunday 
         
-    let IsHolidayToday =
+    let IsHolidayToday () =
         IsHoliday (CurrentDateStr () |> DateTime.Parse)

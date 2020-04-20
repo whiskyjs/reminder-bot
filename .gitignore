@@ -10,6 +10,10 @@ ReminderBot.sln.DotSettings.user
 
 appsettings.json
 appsettings.Development.json
-storage.db
 
 Samples
+
+/Database/*
+!/Database/.gitkeep
+/Logs/*
+!/Logs/.gitkeep

@@ -1,7 +1,6 @@
 ﻿namespace ReminderBot.Controller.API.V1.Telegram
 
 open Microsoft.Extensions.Configuration
-open Microsoft.Extensions.Logging
 open Microsoft.AspNetCore.Mvc
 
 open ReminderBot.Model.Telegram
@@ -9,11 +8,8 @@ open ReminderBot.Logic
 
 [<ApiController>]
 [<Route("/api/v1/telegram/update/")>]
-type Update(_logger: ILogger<Update>) =
+type Update() =
     inherit ControllerBase()
-    
-    [<HttpGet>]
-    member this.Get(): string = "¯\_(ツ)_/¯"
     
     [<HttpPost>]
     member this.Post([<FromServices>] cfg: IConfiguration, [<FromBody>] notification: Notification.This) =
@@ -23,5 +19,6 @@ type Update(_logger: ILogger<Update>) =
         
         (connector, message)
         ||> Resolver.Resolve cfg
-        |> Executor.Execute
-        |> Executor.Send cfg connector.Id
+        |> Executor.UnwrapResult
+        |> Executor.SendAsync cfg connector.Id
+        |> Async.Start

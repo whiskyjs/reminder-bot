@@ -2,6 +2,8 @@ namespace ReminderBot.Logic
 
 open System
 
+open Serilog
+
 open ReminderBot.Helpers
 open ReminderBot.Model
 
@@ -10,7 +12,7 @@ module Notifier =
     let UserDelay = 5000
     
     let Notify cfg () =
-        match Date.IsHolidayToday with
+        match Date.IsHolidayToday () with
         | true ->
             async { () }
         | _ ->
@@ -32,6 +34,13 @@ module Notifier =
                             async { () }
                         with
                             | :? System.Collections.Generic.KeyNotFoundException ->
+                                let messageToLog =
+                                    ["Отправляем уведомление для пользователя {@Login} ({@Id})."
+                                     "Назначенное время рассылки - {@NotificationTime}." ]
+                                    |> String.concat " "
+                                
+                                Log.Debug(messageToLog, user.Login, user.Id, user.NotificationTime)
+                                
                                 // Сохраняем запись о том, что отправка уже была
                                 Notification.This.Insert {
                                     Id = 0
@@ -44,9 +53,8 @@ module Notifier =
                                 // Собственно отправка
                                 (user.Connectors.Telegram, Resolver.Command.Stats)
                                 ||> Resolver.Resolve cfg
-                                |> Executor.Execute
-                                |> Executor.Send cfg user.Connectors.Telegram.Id
-                                |> Async.Ignore
+                                |> Executor.UnwrapResult
+                                |> Executor.SendAsync cfg user.Connectors.Telegram.Id
                                 
                             | _ -> async { () }
                         )
