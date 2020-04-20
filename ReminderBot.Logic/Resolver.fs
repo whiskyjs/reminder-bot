@@ -146,15 +146,18 @@ module Resolver =
             |> Resolution.Async
 
         | [ Command.Time; time ] ->
-            if Regex.IsMatch(time, "\d{2}:\d{2}") |> not then LogicError "Некорректный формат времени." |> raise
+            async {
+                if Regex.IsMatch(time, "\d{2}:\d{2}") |> not then LogicError "Некорректный формат времени." |> raise
 
-            let user = FetchUser connector.Id
+                let user = FetchUser connector.Id
 
-            { user with NotificationTime = time }
-            |> User.This.Update
-            |> ignore
+                { user with NotificationTime = time }
+                |> User.This.Update
+                |> ignore
 
-            sprintf "Новое время отправки уведомлений: %s." time |> Resolution.Message
+                return sprintf "Новое время отправки уведомлений: %s." time
+            }
+            |> Resolution.Async
 
         | [ Command.Stats ] ->
             async {
