@@ -1,7 +1,5 @@
 namespace ReminderBot.Model.Telegram
 
-open System.Text.Json.Serialization
-
 open Microsoft.Extensions.Configuration
 
 open ReminderBot.Model
@@ -11,13 +9,15 @@ module Notification =
     type From =
         { id: int
           is_bot: bool
-          first_name: string
+          first_name: string option
+          last_name: string option
           username: string option
-          language_code: string }
+          language_code: string option }
 
     type Chat =
         { id: int
-          first_name: string
+          first_name: string option
+          last_name: string option
           username: string option
           ``type``: string }
 
@@ -30,18 +30,33 @@ module Notification =
 
     type This =
         { update_id: int
-          message: Message }
+          message: Message option
+          edited_message: Message option }
+        
+    let ExtractMessage notification =
+        match notification.message with
+            | Some message -> message
+            | None ->
+                match notification.edited_message with
+                | Some message -> message
+                | None -> failwith "Невозможно извлечь сообщение из уведомления"
 
     let ExtractConnector notification =
-        let { message = message } = notification
+        let message = ExtractMessage notification
 
         { Id = message.from.id
-          Name = message.from.first_name
+          Name =
+              match message.from.first_name with
+              | Some value -> value
+              | None -> ""
           Username =
               match message.from.username with
               | Some string -> string
               | _ -> "Логин отсутствует"
-          Language = message.from.language_code }
+          Language =
+              match message.from.language_code with
+              | Some value -> value
+              | None -> "" }
         
     let EmptyConnector =
         { Id = 0
@@ -50,7 +65,9 @@ module Notification =
           Language = "" }
         
     let ExtractText notification =
-        notification.message.text.Trim()
+        let message = ExtractMessage notification
+        
+        message.text.Trim()
 
     let BuildUser (remoteUser: Redmine.User) relatedData (сfg: IConfiguration): User.This =
         { Id = remoteUser.id
