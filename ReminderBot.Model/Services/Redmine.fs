@@ -33,7 +33,7 @@ module Redmine =
     type Comment =
         { id: int
           user: NamedLink
-          notes: string
+          notes: string option
           created_on: string
           private_notes: bool }
 
